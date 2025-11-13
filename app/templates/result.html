@@ -1,0 +1,88 @@
+<!-- app/templates/result.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SPC Result</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Compression Result</h1>
+
+    <section>
+      <h2>Files</h2>
+      <ul>
+        <li><a href="{{ spc_url }}">Download SPC Package (.spc)</a> | <a href="/view/{{ spc_url.split('/')[-1] }}">View Contents</a></li>
+        <li><a href="{{ zip_url }}">Download ZIP Package (.zip)</a> | <a href="/view/{{ zip_url.split('/')[-1] }}">View Contents</a></li>
+        {% if json_url %}
+        <li><a href="{{ json_url }}">Download Metadata JSON (.json)</a></li>
+        {% endif %}
+        <li><a href="{{ recon_url }}">Download Reconstructed Image</a></li>
+        <li><a href="{{ jpeg_url }}">Download Baseline JPEG</a></li>
+        {% if visualization_url %}
+        <li><a href="{{ visualization_url }}">Download Detection Visualization</a></li>
+        {% endif %}
+      </ul>
+    </section>
+
+    <section>
+      <h2>Compression Statistics</h2>
+      <table>
+        <tr><th>Original Size</th><td>{{ stats.original_size_kb | round(2) }} KB</td></tr>
+        <tr><th>SPC Package Size</th><td>{{ stats.spc_size_kb | round(2) }} KB</td></tr>
+        <tr><th>Baseline JPEG Size</th><td>{{ stats.jpeg_size_kb | round(2) }} KB</td></tr>
+        <tr><th>SPC Reduction vs Original</th><td>{{ stats.spc_reduction_pct | round(2) }} %</td></tr>
+        <tr><th>JPEG Reduction vs Original</th><td>{{ stats.jpeg_reduction_pct | round(2) }} %</td></tr>
+      </table>
+    </section>
+
+    {% if stats.detection_stats %}
+    <section>
+      <h2>Image Analysis</h2>
+      <table>
+        <tr><th>Image Dimensions</th><td>{{ stats.detection_stats.image_width }} × {{ stats.detection_stats.image_height }} pixels</td></tr>
+        <tr><th>Faces Detected</th><td>{{ stats.detection_stats.faces_detected }}</td></tr>
+        <tr><th>Text Regions Detected</th><td>{{ stats.detection_stats.text_regions_detected }}</td></tr>
+        <tr><th>Saliency Regions Detected</th><td>{{ stats.detection_stats.saliency_regions_detected }}</td></tr>
+        <tr><th>Total Patches Created</th><td>{{ stats.detection_stats.total_patches }}</td></tr>
+      </table>
+    </section>
+    {% endif %}
+
+    <section>
+      <h2>Quality Metrics</h2>
+      <table>
+        <tr><th>Reconstructed vs Original (PSNR)</th><td>{{ metrics.psnr_recon | round(3) }}</td></tr>
+        <tr><th>Reconstructed vs Original (SSIM)</th><td>{{ metrics.ssim_recon | round(4) }}</td></tr>
+        <tr><th>JPEG vs Original (PSNR)</th><td>{{ metrics.psnr_jpeg | round(3) }}</td></tr>
+        <tr><th>JPEG vs Original (SSIM)</th><td>{{ metrics.ssim_jpeg | round(4) }}</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>Visual</h2>
+      {% if visualization_url %}
+      <div class="images">
+        <div><h4>Detected Regions</h4>
+          <p style="font-size: 0.9em; color: #666;">
+            <span style="color: red;">●</span> Faces | 
+            <span style="color: blue;">●</span> Text | 
+            <span style="color: green;">●</span> Salient | 
+            <span style="color: yellow;">●</span> Merged Patches
+          </p>
+          <img src="{{ visualization_url }}" alt="detections" />
+        </div>
+      </div>
+      {% endif %}
+      <div class="images">
+        <div><h4>Original</h4><img src="{{ original_url }}" alt="original" /></div>
+        <div><h4>Reconstructed (SPC)</h4><img src="{{ recon_url }}" alt="reconstructed" /></div>
+        <div><h4>Baseline JPEG</h4><img src="{{ jpeg_url }}" alt="jpeg" /></div>
+      </div>
+    </section>
+
+    <p><a href="/">Back</a></p>
+  </div>
+</body>
+</html>

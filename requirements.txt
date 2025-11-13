@@ -1,0 +1,9 @@
+flask
+pillow
+numpy
+imageio
+scikit-image
+opencv-python
+easyocr
+mtcnn
+

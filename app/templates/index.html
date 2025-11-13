@@ -1,0 +1,138 @@
+<!-- app/templates/index.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SPC - Selective Patch-aware Compression</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>SPC - Selective Patch-aware Compression</h1>
+
+    <section>
+      <h2>Compress an Image</h2>
+      <form id="compressForm" method="post" enctype="multipart/form-data">
+        <input type="file" name="image" accept="image/*" required id="imageInput">
+        <button type="submit" id="compressBtn">Compress</button>
+      </form>
+      
+      <!-- Progress Bar -->
+      <div id="progressContainer" style="display: none; margin-top: 20px;">
+        <div style="background: #f0f0f0; border-radius: 10px; padding: 20px;">
+          <h3 id="progressStatus">Initializing...</h3>
+          <div style="background: #ddd; border-radius: 5px; height: 30px; margin: 10px 0; overflow: hidden;">
+            <div id="progressBar" style="background: linear-gradient(90deg, #4CAF50, #45a049); height: 100%; width: 0%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+              <span id="progressPercent">0%</span>
+            </div>
+          </div>
+          <p id="progressStep" style="color: #666; font-size: 0.9em; margin-top: 10px;"></p>
+        </div>
+      </div>
+    </section>
+    
+    <script>
+      document.getElementById('compressForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressStatus = document.getElementById('progressStatus');
+        const progressStep = document.getElementById('progressStep');
+        const compressBtn = document.getElementById('compressBtn');
+        
+        // Show progress bar immediately
+        progressContainer.style.display = 'block';
+        compressBtn.disabled = true;
+        compressBtn.textContent = 'Compressing...';
+        
+        // Initialize progress display
+        progressBar.style.width = '0%';
+        progressPercent.textContent = '0%';
+        progressStatus.textContent = 'Initializing...';
+        progressStep.textContent = 'Starting compression...';
+        
+        let taskId = null;
+        let pollInterval = null;
+        
+        // Function to poll for progress
+        const startPolling = (id) => {
+          if (pollInterval) return; // Already polling
+          
+          taskId = id;
+          pollInterval = setInterval(() => {
+            fetch(`/progress/${taskId}`)
+              .then(res => res.json())
+              .then(progressData => {
+                progressBar.style.width = progressData.percent + '%';
+                progressPercent.textContent = progressData.percent + '%';
+                progressStatus.textContent = progressData.status;
+                progressStep.textContent = progressData.step || '';
+                
+                if (progressData.percent >= 100) {
+                  clearInterval(pollInterval);
+                  pollInterval = null;
+                  // Wait a moment for results to be fully stored, then redirect to result page
+                  setTimeout(() => {
+                    window.location.href = `/result/${taskId}`;
+                  }, 1500); // Give time for results to be stored
+                }
+              })
+              .catch(err => {
+                console.error('Progress poll error:', err);
+              });
+          }, 500); // Poll every 500ms for more responsive updates
+        };
+        
+        // Submit form via AJAX and start polling immediately when we get task_id
+        fetch('/compress', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Compression failed');
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Start polling immediately with the task_id
+          startPolling(data.task_id);
+        })
+        .catch(error => {
+          progressStatus.textContent = 'Error: ' + error.message;
+          progressBar.style.background = '#f44336';
+          compressBtn.disabled = false;
+          compressBtn.textContent = 'Compress';
+        });
+      });
+    </script>
+
+    <section>
+      <h2>Decompress an .spc</h2>
+      <form action="/decompress" method="post" enctype="multipart/form-data">
+        <input type="file" name="spc" accept=".spc,.zip" required>
+        <button type="submit">Decompress</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>View SPC Package Contents</h2>
+      <p>Upload an SPC or ZIP file to see what's inside (files, metadata, etc.)</p>
+      <form action="/view" method="post" enctype="multipart/form-data">
+        <input type="file" name="spc" accept=".spc,.zip" required>
+        <button type="submit">View Contents</button>
+      </form>
+    </section>
+
+    <footer>
+      <p>SPC demo — preserves ROI patches (text/faces/saliency) while heavily compressing background.</p>
+    </footer>
+  </div>
+</body>
+</html>

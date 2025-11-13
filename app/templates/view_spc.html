@@ -1,0 +1,140 @@
+<!-- app/templates/view_spc.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SPC Package Contents - {{ filename }}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    .meta-section {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .meta-section pre {
+      background: white;
+      padding: 10px;
+      border-radius: 3px;
+      overflow-x: auto;
+    }
+    .file-list {
+      margin: 20px 0;
+    }
+    .file-item {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+    .file-item:last-child {
+      border-bottom: none;
+    }
+    .file-name {
+      font-weight: bold;
+      color: #333;
+    }
+    .file-size {
+      color: #666;
+      font-size: 0.9em;
+    }
+    .compression-ratio {
+      color: #0066cc;
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>SPC Package Contents</h1>
+    <p><strong>File:</strong> {{ filename }}</p>
+
+    <section class="file-list">
+      <h2>Files in Package</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Filename</th>
+            <th>Original Size</th>
+            <th>Compressed Size</th>
+            <th>Compression Ratio</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in contents %}
+          <tr>
+            <td class="file-name">{{ item.name }}</td>
+            <td class="file-size">
+              {% if item.size %}
+                {{ "%.2f"|format(item.size / 1024) }} KB
+              {% else %}
+                N/A
+              {% endif %}
+            </td>
+            <td class="file-size">
+              {% if item.compressed_size %}
+                {{ "%.2f"|format(item.compressed_size / 1024) }} KB
+              {% else %}
+                N/A
+              {% endif %}
+            </td>
+            <td class="compression-ratio">
+              {% if item.size and item.compressed_size and item.size > 0 %}
+                {{ "%.1f"|format((1 - item.compressed_size / item.size) * 100) }}%
+              {% else %}
+                -
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    {% if meta_data %}
+    <section class="meta-section">
+      <h2>Metadata (meta.json)</h2>
+      {% if meta_json_str %}
+      <pre>{{ meta_json_str }}</pre>
+      {% else %}
+      <pre>{{ meta_data }}</pre>
+      {% endif %}
+      <details>
+        <summary>Metadata Details</summary>
+        <table style="margin-top: 10px;">
+          <tr><th>Image Dimensions</th><td>{{ meta_data.width }} × {{ meta_data.height }} pixels</td></tr>
+          <tr><th>Total Patches</th><td>{{ meta_data.patch_count }}</td></tr>
+          <tr><th>Base Image</th><td>{{ meta_data.base.filename }} (Quality: {{ meta_data.base.quality }})</td></tr>
+        </table>
+        {% if meta_data.patches %}
+        <h3>Patch Information</h3>
+        <table style="margin-top: 10px;">
+          <thead>
+            <tr>
+              <th>Patch ID</th>
+              <th>Filename</th>
+              <th>Position (x, y)</th>
+              <th>Size (w × h)</th>
+              <th>Quantization</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for patch in meta_data.patches %}
+            <tr>
+              <td>{{ patch.id }}</td>
+              <td>{{ patch.filename }}</td>
+              <td>({{ patch.x }}, {{ patch.y }})</td>
+              <td>{{ patch.w }} × {{ patch.h }}</td>
+              <td>{{ patch.quant }} bits</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+      </details>
+    </section>
+    {% endif %}
+
+    <p><a href="/">Back to Home</a></p>
+  </div>
+</body>
+</html>
+
